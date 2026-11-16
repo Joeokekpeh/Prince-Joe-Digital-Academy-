@@ -1,0 +1,410 @@
+{
+  "entities": {
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator marker document keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "grantedAt"]
+    },
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Core student profile document containing non-PII academy track details.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "trackInterest": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": ["student", "admin"]
+        },
+        "joinedLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "trackInterest", "role", "joinedLabel", "createdAt", "updatedAt"]
+    },
+    "StudentPrivateInfo": {
+      "title": "StudentPrivateInfo",
+      "description": "Isolated PII subcollection storing student email and account metadata.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Academy course catalog entry managed by administrators.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Artificial Intelligence",
+            "Website & App Development",
+            "Digital Business",
+            "Digital Foundations"
+          ]
+        },
+        "level": {
+          "type": "string",
+          "enum": ["Beginner", "Intermediate", "Builder"]
+        },
+        "durationWeeks": {
+          "type": "number"
+        },
+        "lessonsCount": {
+          "type": "number"
+        },
+        "featured": {
+          "type": "boolean"
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "shortDescription": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 800
+        },
+        "tuitionLabel": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "outcomes": {
+          "type": "array"
+        },
+        "lessons": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "level",
+        "durationWeeks",
+        "lessonsCount",
+        "featured",
+        "imageUrl",
+        "shortDescription",
+        "tuitionLabel",
+        "outcomes",
+        "lessons",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CourseEnrollment": {
+      "title": "CourseEnrollment",
+      "description": "Student enrollment and module completion progress for a course.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "courseId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "enrolledDate": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "completedLessonIds": {
+          "type": "array"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "completed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "courseId",
+        "enrolledDate",
+        "completedLessonIds",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "NewsArticle": {
+      "title": "NewsArticle",
+      "description": "AI and technology briefing article managed by administrators.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Artificial Intelligence", "Web Engineering", "Digital Economy"]
+        },
+        "publishedDate": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "readTimeMinutes": {
+          "type": "number"
+        },
+        "author": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "body": {
+          "type": "array"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "publishedDate",
+        "readTimeMinutes",
+        "author",
+        "imageUrl",
+        "excerpt",
+        "body",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SiteContentConfig": {
+      "title": "SiteContentConfig",
+      "description": "Editable website welcome banner and mission text managed by administrators.",
+      "type": "object",
+      "properties": {
+        "academyName": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "heroHeadline": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 220
+        },
+        "heroSubheadline": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 600
+        },
+        "aboutMission": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 800
+        },
+        "announcementLine": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 300
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "academyName",
+        "heroHeadline",
+        "heroSubheadline",
+        "aboutMission",
+        "announcementLine",
+        "updatedAt"
+      ]
+    },
+    "ContactInquiry": {
+      "title": "ContactInquiry",
+      "description": "Contact message submitted by an authenticated visitor.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderAlias": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "topic": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "userId", "senderAlias", "topic", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Trusted administrator directory verified via Firestore Security Rules."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/StudentProfile" },
+      "description": "Private student profile record accessible only to the owning student or an administrator."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/StudentPrivateInfo" },
+      "description": "Isolated PII subcollection storing verified email address strictly for the owner or admin."
+    },
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Academy courses catalog readable by all visitors and writable only by administrators."
+    },
+    "/enrollments/{enrollmentId}": {
+      "schema": { "$ref": "#/entities/CourseEnrollment" },
+      "description": "Student course enrolments and lesson progress strictly isolated to the owning student or administrators."
+    },
+    "/news/{articleId}": {
+      "schema": { "$ref": "#/entities/NewsArticle" },
+      "description": "AI and technology news articles readable publicly and managed by administrators."
+    },
+    "/siteContent/{docId}": {
+      "schema": { "$ref": "#/entities/SiteContentConfig" },
+      "description": "Editable homepage and mission text readable publicly and managed by administrators."
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/ContactInquiry" },
+      "description": "Student contact inquiries readable by the submitting user or administrators."
+    }
+  }
+}

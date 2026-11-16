@@ -1,0 +1,6 @@
+{
+  "name": "PRINCE JOE DIGITAL ACADEMY",
+  "description": "An international technology education academy teaching artificial intelligence, website and app development, digital skills, and online business opportunities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

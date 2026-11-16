@@ -1,0 +1,315 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Shared hardened helper primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'joeokekpeh@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Entity validation blueprints
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'grantedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'grantedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 200)) &&
+        data.grantedAt is timestamp;
+    }
+
+    function isValidStudentProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'trackInterest', 'role', 'joinedLabel', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'trackInterest', 'role', 'joinedLabel', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.trackInterest is string && data.trackInterest.size() >= 2 && data.trackInterest.size() <= 120 &&
+        data.role is string && data.role in ['student', 'admin'] &&
+        data.joinedLabel is string && data.joinedLabel.size() >= 2 && data.joinedLabel.size() <= 80 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidStudentPrivateInfo(data) {
+      return data.keys().hasAll(['uid', 'email', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCourse(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'category', 'level', 'durationWeeks', 'lessonsCount',
+          'featured', 'imageUrl', 'shortDescription', 'tuitionLabel',
+          'outcomes', 'lessons', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'category', 'level', 'durationWeeks', 'lessonsCount',
+          'featured', 'imageUrl', 'shortDescription', 'tuitionLabel',
+          'outcomes', 'lessons', 'createdAt', 'updatedAt'
+        ]) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 160 &&
+        data.category is string && data.category in [
+          'Artificial Intelligence',
+          'Website & App Development',
+          'Digital Business',
+          'Digital Foundations'
+        ] &&
+        data.level is string && data.level in ['Beginner', 'Intermediate', 'Builder'] &&
+        data.durationWeeks is number && data.durationWeeks >= 1 && data.durationWeeks <= 104 &&
+        data.lessonsCount is number && data.lessonsCount >= 0 && data.lessonsCount <= 100 &&
+        data.featured is bool &&
+        data.imageUrl is string && data.imageUrl.size() <= 400 &&
+        data.shortDescription is string && data.shortDescription.size() >= 10 && data.shortDescription.size() <= 800 &&
+        data.tuitionLabel is string && data.tuitionLabel.size() <= 80 &&
+        data.outcomes is list && data.outcomes.size() <= 20 &&
+        (data.outcomes.size() == 0 || data.outcomes[0] is string) &&
+        data.lessons is list && data.lessons.size() <= 50 &&
+        (data.lessons.size() == 0 || data.lessons[0] is map) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidEnrollment(data) {
+      return data.keys().hasAll([
+          'id', 'userId', 'courseId', 'enrolledDate',
+          'completedLessonIds', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'courseId', 'enrolledDate',
+          'completedLessonIds', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.courseId is string && data.courseId.size() >= 1 && data.courseId.size() <= 128 &&
+        data.courseId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.enrolledDate is string && data.enrolledDate.size() >= 2 && data.enrolledDate.size() <= 60 &&
+        data.completedLessonIds is list && data.completedLessonIds.size() <= 50 &&
+        (data.completedLessonIds.size() == 0 || data.completedLessonIds[0] is string) &&
+        data.status is string && data.status in ['active', 'completed'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidNewsArticle(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'category', 'publishedDate', 'readTimeMinutes',
+          'author', 'imageUrl', 'excerpt', 'body', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'title', 'category', 'publishedDate', 'readTimeMinutes',
+          'author', 'imageUrl', 'excerpt', 'body', 'createdAt', 'updatedAt'
+        ]) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.title is string && data.title.size() >= 4 && data.title.size() <= 200 &&
+        data.category is string && data.category in ['Artificial Intelligence', 'Web Engineering', 'Digital Economy'] &&
+        data.publishedDate is string && data.publishedDate.size() <= 60 &&
+        data.readTimeMinutes is number && data.readTimeMinutes >= 1 && data.readTimeMinutes <= 60 &&
+        data.author is string && data.author.size() <= 100 &&
+        data.imageUrl is string && data.imageUrl.size() <= 400 &&
+        data.excerpt is string && data.excerpt.size() <= 500 &&
+        data.body is list && data.body.size() <= 40 &&
+        (data.body.size() == 0 || data.body[0] is string) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSiteContent(data) {
+      return data.keys().hasAll([
+          'academyName', 'heroHeadline', 'heroSubheadline',
+          'aboutMission', 'announcementLine', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'academyName', 'heroHeadline', 'heroSubheadline',
+          'aboutMission', 'announcementLine', 'updatedAt'
+        ]) &&
+        data.academyName is string && data.academyName.size() >= 3 && data.academyName.size() <= 120 &&
+        data.heroHeadline is string && data.heroHeadline.size() >= 5 && data.heroHeadline.size() <= 220 &&
+        data.heroSubheadline is string && data.heroSubheadline.size() >= 10 && data.heroSubheadline.size() <= 600 &&
+        data.aboutMission is string && data.aboutMission.size() >= 10 && data.aboutMission.size() <= 800 &&
+        data.announcementLine is string && data.announcementLine.size() >= 5 && data.announcementLine.size() <= 300 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['id', 'userId', 'senderAlias', 'topic', 'message', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'senderAlias', 'topic', 'message', 'createdAt']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.userId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.senderAlias is string && data.senderAlias.size() >= 2 && data.senderAlias.size() <= 100 &&
+        data.topic is string && data.topic.size() >= 2 && data.topic.size() <= 120 &&
+        data.message is string && data.message.size() >= 10 && data.message.size() <= 2000 &&
+        data.createdAt is timestamp;
+    }
+
+    // Trusted Admin Directory
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(adminId) && isAdmin() && isValidAdminRecord(incoming()) && incoming().uid == adminId && incoming().grantedAt == request.time;
+      allow update: if isValidId(adminId) && isAdmin() && isValidAdminRecord(incoming()) && incoming().uid == existing().uid && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'grantedAt']);
+      allow delete: if isValidId(adminId) && isAdmin();
+    }
+
+    // Student Profiles (strictly isolated to owner or admin)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin() || (isVerifiedUser() && existing().uid == request.auth.uid);
+      allow create: if isValidId(userId) &&
+        isVerifiedUser() &&
+        isValidStudentProfile(incoming()) &&
+        incoming().uid == userId &&
+        (isOwner(userId) || isAdmin()) &&
+        (incoming().role == 'student' || isAdmin()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isValidId(userId) &&
+        isVerifiedUser() &&
+        isValidStudentProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'trackInterest', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(userId) && isAdmin();
+
+      // Isolated PII subcollection
+      match /private/{docId} {
+        allow get: if isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin());
+        allow list: if isOwner(userId) || isAdmin();
+        allow create: if isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin()) && isValidStudentPrivateInfo(incoming()) && incoming().uid == userId && incoming().updatedAt == request.time;
+        allow update: if isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin()) && isValidStudentPrivateInfo(incoming()) && incoming().uid == existing().uid && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(docId) && isAdmin();
+      }
+    }
+
+    // Academy Courses Catalog
+    match /courses/{courseId} {
+      allow get: if isValidId(courseId);
+      allow list: if true;
+      allow create: if isValidId(courseId) && isAdmin() && isValidCourse(incoming()) && incoming().id == courseId && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(courseId) && isAdmin() && isValidCourse(incoming()) && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly([
+        'title', 'category', 'level', 'durationWeeks', 'lessonsCount',
+        'featured', 'imageUrl', 'shortDescription', 'tuitionLabel',
+        'outcomes', 'lessons', 'updatedAt'
+      ]);
+      allow delete: if isValidId(courseId) && isAdmin();
+    }
+
+    // Student Enrollments & Lesson Progress
+    match /enrollments/{enrollmentId} {
+      allow get: if isValidId(enrollmentId) && isVerifiedUser() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(enrollmentId) &&
+        isVerifiedUser() &&
+        isValidEnrollment(incoming()) &&
+        incoming().id == enrollmentId &&
+        (incoming().userId == request.auth.uid || isAdmin()) &&
+        incoming().status == 'active' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/courses/$(incoming().courseId));
+      allow update: if isValidId(enrollmentId) &&
+        isVerifiedUser() &&
+        isValidEnrollment(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().courseId == existing().courseId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().userId == request.auth.uid &&
+            existing().status != 'completed' &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['completedLessonIds', 'status', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(enrollmentId) && (isAdmin() || (isVerifiedUser() && existing().userId == request.auth.uid));
+    }
+
+    // AI & Technology News
+    match /news/{articleId} {
+      allow get: if isValidId(articleId);
+      allow list: if true;
+      allow create: if isValidId(articleId) && isAdmin() && isValidNewsArticle(incoming()) && incoming().id == articleId && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isValidId(articleId) && isAdmin() && isValidNewsArticle(incoming()) && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly([
+        'title', 'category', 'publishedDate', 'readTimeMinutes',
+        'author', 'imageUrl', 'excerpt', 'body', 'updatedAt'
+      ]);
+      allow delete: if isValidId(articleId) && isAdmin();
+    }
+
+    // Editable Site Content
+    match /siteContent/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if true;
+      allow create: if isValidId(docId) && isAdmin() && isValidSiteContent(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isValidId(docId) && isAdmin() && isValidSiteContent(incoming()) && incoming().updatedAt == request.time && incoming().diff(existing()).affectedKeys().hasOnly([
+        'academyName', 'heroHeadline', 'heroSubheadline',
+        'aboutMission', 'announcementLine', 'updatedAt'
+      ]);
+      allow delete: if isValidId(docId) && isAdmin();
+    }
+
+    // Contact Inquiries
+    match /inquiries/{inquiryId} {
+      allow get: if isValidId(inquiryId) && isVerifiedUser() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isValidId(inquiryId) &&
+        isVerifiedUser() &&
+        isValidInquiry(incoming()) &&
+        incoming().id == inquiryId &&
+        incoming().userId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isValidId(inquiryId) && isAdmin();
+    }
+  }
+}
